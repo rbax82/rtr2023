@@ -1,0 +1,37 @@
+HIT_RATE='4/minute'
+BLOCKED_TIMEOUT='1m'
+# Create the filter table
+nft add table ip filter
+
+# Create the base chains with default policy
+nft 'add chain ip filter input {type filter hook input priority filter; policy drop; }'
+nft 'add chain ip filter output {type filter hook output priority filter; policy accept; }'
+nft 'add chain ip filter forward {type filter hook forward priority filter; policy drop; }'
+
+# Allow unrestricted incoming connections over the local interface
+nft add rule ip filter input iifname "lo" accept
+nft add rule ip filter input ip saddr 127.0.0.0/8 drop
+
+# Allow incoming tcp packets associated with established connections (and Nmap scans...)
+nft 'add rule ip filter input tcp flags & (fin|syn|rst|ack) != syn accept'
+
+# Allow in any traffic destined for a connection that already exists
+nft add rule ip filter input ct state related,established accept
+
+# Allow all incoming DNS replies
+nft add rule ip filter input udp sport 53 accept
+
+# Create timeout set for enforcing SSH hit count rates to prevent brute force attacks
+nft add set ip filter ssh_bruteforce_wait { type ipv4_addr \; flags dynamic, timeout \; timeout $BLOCKED_TIMEOUT \; }
+
+# Block rule to drop all new connections to port 22 while IP is in the ssh_bruteforce_wait SET above
+nft add rule ip filter input tcp dport 22 ip saddr @ssh_bruteforce_wait drop
+#NAT
+ nft add table nat
+ nft 'add chain nat prerouting { type nat hook prerouting priority -100; }'
+#Port forward
+ nft 'add rule nat prerouting tcp dport 80 dnat to 192.168.42.7:80'
+ nft 'add rule nat prerouting tcp dport 443 dnat to 192.168.42.7:443'
+ nft 'add rule nat prerouting tcp dport 32400 dnat to 192.168.42.7:32400'
+ nft 'add rule nat prerouting tcp dport 56881 dnat to 192.168.42.7:56881'
+ nft 'add rule nat prerouting tcp dport 51820 dnat to 192.168.42.7:51820'
