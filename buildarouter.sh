@@ -1,6 +1,5 @@
 #mainline kernel is the best kernel
 sudo add-apt-repository ppa:cappelikan/ppa
-
 sudo apt update
 sudo apt install mainline
 sudo mainline install-latest -y
@@ -22,7 +21,7 @@ sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin ca-certificates curl gnupg kea unbound chrony docker lm-sensors snmpd molly-guard net-tools nftables-persistent
 #Set the timezone
 sudo timedatectl set-timezone America/Edmonton
-#Set the clock
+#Set the clock - default chrony config is fine
 echo "makestep 0.1 3" >> /etc/chrony/chrony.conf
 sudo bash -c "systemctl stop chronyd && chronyd -q 'server pool.ntp.org iburst' && systemctl start chronyd &&  chronyc -a makestep &&  hwclock -w"
 #REBOOT
